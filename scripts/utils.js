@@ -144,7 +144,7 @@ function genTypeCheckFn (typeStr){
 /**
  * @description 按条件过滤对象属性并格式化，生成满足条件的JSON对象
  * @param {Object} obj 可转换成JSON格式的对象
- * @param {?Object|Array} options 格式化选项，可包含<Function>condition、<Array>includes、<Array>excludes三个选项
+ * @param {?Object|Array} options 格式化选项，可包含<Function>filter、<Array>includes、<Array>excludes三个选项中的任一个
  * @returns {String} 格式化后的JSON字符串 
 */
 function filterToJSON (obj, options){
