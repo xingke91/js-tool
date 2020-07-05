@@ -101,7 +101,7 @@ function debounce(fn, interval){
         lastTime = now;
         timer = setTimeout(() => {
             clearTimeout(timer);
-            _self.apply(ctx, args);
+            _self.call(ctx, ...args);
         }, interval);
     }
 }
@@ -230,4 +230,4 @@ export {
     deepClone,
     isWechat,
     isMobile
-}
+};
