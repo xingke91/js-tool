@@ -23,10 +23,11 @@ hookApis.forEach(m => {
     axiosHooks[m] = noop;
 });
 
-// 设置默认请求头
+// 设置默认请求头及超时时间
 axios.defaults.headers.get['Cache-Control'] = 'no-cache';
 axios.defaults.headers.get['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
-axios.defaults.headers.post['Content-Type'] = 'application/form-data';
+axios.defaults.headers.post['Content-Type'] = 'application/json;charset=UTF-8';
+axios.defaults.timeout = 60000;
 
 /**
  * @description 向Axios实例中注入对应的钩子函数
@@ -61,7 +62,7 @@ function injectHook(instance, options){
  * @description 手动配置通用的钩子函数
  * @param {Object} options 配置选项 
  */
-export function initRequest(options) {
+function initRequest(options) {
     options = options || {};
     hookApis.forEach(m => {
         if(!options[m]){ return; }
@@ -74,12 +75,17 @@ export function initRequest(options) {
  * @param {Object} options axios实例选项
  * @returns {Axios} Axios实例
  */
-export function getFetcher(options){
+function getFetcher(options){
     let config = {
         cancelToken: new axios.CancelToken(c => cancableRequests.push(c)),
-        transformRequest: [data => qs.stringify(data)]
     };
-    if(options.headers){ config.headers = options.headers; }
+    options = Object.assign({}, options);
+    if(options.method === 'get'){
+        config.transformRequest = [data => qs.stringify(data)];
+    }
+    if(options.headers){
+        config.headers = options.headers;
+    }
     let instance = axios.create(config);
     if(options.useHook !== false){
         //默认使用全局注册的钩子回调函数
@@ -90,25 +96,33 @@ export function getFetcher(options){
 }
 
 /**
- * @description 发送get/post请求
- * @param {String} url 目标url
- * @param {Object} pms 请求参数 
- * @param {Object|null} options 请求选项
- * @returns {Promise} 请求发出后返回的promise对象
+ * @description fetch对象，有get、post、put和delete四个方法用于对应http请求
  */
-export function fetch (url, pms, options){
-    let method = options && options.method ? options.method : 'get';
-    let instance = getFetcher(options);
-    if(method === 'get'){
-        pms = { params: pms };
+let fetch = {};
+['get', 'post', 'put', 'delete'].forEach(m => {
+    fetch[m] = function(url, pms, options){
+        if(!options){ options = {}; }
+        let instance = getFetcher(Object.assign(options, {
+            method: m
+        }));
+        if(m === 'get'){
+            pms = { params: pms };
+        }
+        return instance[m](url, pms);
     }
-    return instance[method](url, pms);
-}
+});
 
 /**
  * @description 取消请求
  */
-export function cancelFetches(){
+function cancelFetches(){
     cancableRequests.forEach(c => { c({ canceled: true }); });
     cancableRequests = [];
+}
+
+export {
+    fetch,
+    initRequest,
+    getFetcher,
+    cancelFetches
 }
