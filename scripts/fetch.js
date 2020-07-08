@@ -79,7 +79,7 @@ function getFetcher(options){
         cancelToken: source.token,
     };
     options = Object.assign({}, options);
-    if(/get/ig.test(options.method)){
+    if(/^get$/i.test(options.method)){
         config.transformRequest = [data => qs.stringify(data)];
     }
     if(options.headers){
