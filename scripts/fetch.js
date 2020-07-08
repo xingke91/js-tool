@@ -94,13 +94,12 @@ function getFetcher(options){
 }
 
 /**
- * @description fetch对象，有get、post、put和delete四个方法用于对应http请求
+ * fetch对象，有get、post、put和delete四个方法用于对应http请求
  */
 let fetch = {};
 ['get', 'post', 'put', 'delete'].forEach(m => {
     fetch[m] = function(url, pms, options){
-        if(!options){ options = {}; }
-        let instance = getFetcher(Object.assign(options, {
+        let instance = getFetcher(Object.assign({}, options, {
             method: m
         }));
         if(m === 'get'){

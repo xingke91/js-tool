@@ -56,7 +56,7 @@ function formatDecimal (num, fixed) {
         throw Error('parameter "num" must be a number!');
     }
     fixed = fixed === undefined ? true : fixed;
-    let numStr = fixed ? (Math.round(num*100) / 100).toFixed(2) : Math.round(num).toString();
+    let numStr = fixed ? (Math.round(num * 100) / 100).toFixed(2) : Math.round(num).toString();
     return numStr.replace(/(\d{1,3})(?=(\d{3})+\b)/g, '$1,');
 }
 
@@ -248,4 +248,4 @@ export {
     deepClone,
     isWechat,
     isMobile
-};
+}
