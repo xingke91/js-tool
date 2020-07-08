@@ -25,6 +25,7 @@ hookFns.forEach(m => {
 axios.defaults.headers.get['Cache-Control'] = 'no-cache';
 axios.defaults.headers.get['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
 axios.defaults.headers.post['Content-Type'] = 'application/json;charset=UTF-8';
+axios.defaults.headers['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.timeout = 60000;
 
 /**
