@@ -5,15 +5,13 @@
 
 import axios from 'axios';
 import qs from 'querystring';
+const source = axios.CancelToken.source();
 
 // 空函数，不会执行任何操作
 function noop(){}
 
 // 可自定义的拦截器钩子函数的名称集合，钩子函数用于向axios实例中注入对应拦截器
 const hookFns = ['before', 'success', 'error'];
-
-// 可取消的请求Token集合（用于取消请求）
-let cancableRequests = [];
 
 // 自定义axios拦截器钩子函数集合
 let axiosHooks = {};
@@ -34,7 +32,7 @@ axios.defaults.timeout = 60000;
  * @param {Axios} instance Axios实例
  * @param {Object} options 为Axios实例单独配置的拦截器函数集合
  */
-function injectHook(instance, options){
+function injectHook(instance, options) {
     if(!instance){ return; }
     let _error = options.error || axiosHooks.error;
     // 添加请求拦截器
@@ -62,7 +60,7 @@ function injectHook(instance, options){
  * @description 手动配置通用的拦截器钩子函数
  * @param {Object} options 配置选项 
  */
-function initRequest(options) {
+function initRequestHooks(options) {
     options = options || {};
     hookFns.forEach(m => {
         if(!options[m]){ return; }
@@ -77,10 +75,10 @@ function initRequest(options) {
  */
 function getFetcher(options){
     let config = {
-        cancelToken: new axios.CancelToken(c => cancableRequests.push(c)),
+        cancelToken: source.token,
     };
     options = Object.assign({}, options);
-    if(options.method === 'get'){
+    if(/get/ig.test(options.method)){
         config.transformRequest = [data => qs.stringify(data)];
     }
     if(options.headers){
@@ -115,14 +113,13 @@ let fetch = {};
 /**
  * @description 取消请求
  */
-function cancelFetches(){
-    cancableRequests.forEach(c => { c({ canceled: true }); });
-    cancableRequests = [];
+function cancelFetches() {
+     source.cancel('Operation canceled!');
 }
 
 export {
     fetch,
-    initRequest,
+    initRequestHooks,
     getFetcher,
     cancelFetches
 }
