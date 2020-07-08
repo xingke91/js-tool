@@ -9,17 +9,17 @@ import qs from 'querystring';
 // 空函数，不会执行任何操作
 function noop(){}
 
-// 可自定义的钩子函数的名称集合
-const hookApis = ['before', 'success', 'error'];
+// 可自定义的拦截器钩子函数的名称集合，钩子函数用于向axios实例中注入对应拦截器
+const hookFns = ['before', 'success', 'error'];
 
 // 可取消的请求Token集合（用于取消请求）
 let cancableRequests = [];
 
-// 自定义axios钩子回调函数集合
+// 自定义axios拦截器钩子函数集合
 let axiosHooks = {};
 
-// 自动初始化axios自定义钩子函数，所有钩子函数均为noop
-hookApis.forEach(m => {
+// 自动初始化axios自定义拦截器钩子函数，所有函数均为noop
+hookFns.forEach(m => {
     axiosHooks[m] = noop;
 });
 
@@ -30,9 +30,9 @@ axios.defaults.headers.post['Content-Type'] = 'application/json;charset=UTF-8';
 axios.defaults.timeout = 60000;
 
 /**
- * @description 向Axios实例中注入对应的钩子函数
+ * @description 向Axios实例中注入对应的拦截器函数
  * @param {Axios} instance Axios实例
- * @param {Object} options 为Axios实例单独配置的钩子函数
+ * @param {Object} options 为Axios实例单独配置的拦截器函数集合
  */
 function injectHook(instance, options){
     if(!instance){ return; }
@@ -59,12 +59,12 @@ function injectHook(instance, options){
 }
 
 /**
- * @description 手动配置通用的钩子函数
+ * @description 手动配置通用的拦截器钩子函数
  * @param {Object} options 配置选项 
  */
 function initRequest(options) {
     options = options || {};
-    hookApis.forEach(m => {
+    hookFns.forEach(m => {
         if(!options[m]){ return; }
         axiosHooks[m] = options[m];
     });
@@ -88,7 +88,7 @@ function getFetcher(options){
     }
     let instance = axios.create(config);
     if(options.useHook !== false){
-        //默认使用全局注册的钩子回调函数
+        //默认使用注册的拦截器钩子函数
         injectHook(instance, options);
     }
     ['all', 'spread'].forEach(m => instance[m] = axios[m]);
