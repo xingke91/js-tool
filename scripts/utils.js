@@ -142,6 +142,17 @@ function genTypeCheckFn (typeStr){
 }
 
 /**
+ * 预定义一些类型判断函数
+ */
+const isString = genTypeCheckFn('String');
+const isArray = genTypeCheckFn('Array');
+const isBool = genTypeCheckFn('Boolean');
+const isSymbol = genTypeCheckFn('Symbol');
+const isObject = genTypeCheckFn('Object');
+const isFunction = genTypeCheckFn('Function');
+const isPromise = genTypeCheckFn('Promise');
+
+/**
  * @description 按条件过滤对象属性并格式化，生成满足条件的JSON对象
  * @param {Object} obj 可转换成JSON格式的对象
  * @param {?Object|Array} options 格式化选项，可包含<Function>filter、<Array>includes、<Array>excludes三个选项中的任一个
@@ -226,6 +237,13 @@ export {
     debounce,
     hasProperty,
     genTypeCheckFn,
+    isString,
+    isArray,
+    isBool,
+    isSymbol,
+    isObject,
+    isFunction,
+    isPromise,
     filterToJSON,
     deepClone,
     isWechat,
