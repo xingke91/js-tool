@@ -74,7 +74,7 @@ function initRequestHooks(options) {
  * @param {Object} options axios实例选项
  * @returns {Axios} Axios实例
  */
-function getFetcher(options){
+function getFetch(options){
     let config = {
         cancelToken: source.token,
     };
@@ -100,9 +100,7 @@ function getFetcher(options){
 let fetch = {};
 ['get', 'post', 'put', 'delete'].forEach(m => {
     fetch[m] = function(url, pms, options){
-        let instance = getFetcher(Object.assign({}, options, {
-            method: m
-        }));
+        let instance = getFetch(Object.assign({}, options, { method: m }));
         if(m === 'get'){
             pms = { params: pms };
         }
@@ -120,6 +118,6 @@ function cancelFetches() {
 export {
     fetch,
     initRequestHooks,
-    getFetcher,
+    getFetch,
     cancelFetches
 }

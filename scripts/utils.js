@@ -40,7 +40,7 @@ function formatTime (time, format) {
     if(typeof(format) !== 'string' || !format) format = 'yyyy-MM-dd hh:mm:ss';
     let _time = new Date(time);
     time = _time.toString().split(/[\s\:]/g).slice(0, -2);
-    time[1] = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'][_time.getMonth()];
+    time[1] = `0${_time.getMonth() + 1}`.slice(-2);
     let _mapping = { MM: 1, dd: 2, yyyy: 3, hh: 4, mm: 5, ss: 6 };
     return format.replace(/([Mmdhs]|y{2})\1/g, (key) => time[_mapping[key]]);
 }
