@@ -10,13 +10,13 @@ const source = axios.CancelToken.source();
 // 空函数，不会执行任何操作
 function noop(){}
 
-// 可自定义的拦截器钩子函数的名称集合，钩子函数用于向axios实例中注入对应拦截器
+// 可自定义的拦截器钩子函数的名称集合，钩子函数可用于axios实例发送请求前后调用
 const hookFns = ['before', 'success', 'error'];
 
 // 自定义axios拦截器钩子函数集合
 let axiosHooks = {};
 
-// 自动初始化axios自定义拦截器钩子函数，所有函数均为noop
+// 初始化axios自定义拦截器钩子函数，初始函数均为noop
 hookFns.forEach(m => {
     axiosHooks[m] = noop;
 });
@@ -96,8 +96,12 @@ function getFetch(options){
 
 /**
  * fetch对象，有get、post、put和delete四个方法用于对应http请求
+ * all和spread为axios对应的方法，用于多个请求
  */
-let fetch = {};
+let fetch = {
+    all: axios.all,
+    spread: axios.spread
+};
 ['get', 'post', 'put', 'delete'].forEach(m => {
     fetch[m] = function(url, pms, options){
         let instance = getFetch(Object.assign({}, options, { method: m }));
