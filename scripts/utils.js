@@ -28,6 +28,24 @@ function isUrl (str) {
     return /^https?\:\/\/.+$/i.test(str);
 }
 
+const ua = navigator.userAgent;
+
+/**
+ * @description 根据userAgent判断当前应用是否为微信
+ * @returns 判断结果
+ */
+function isWechat () {
+    return /micromessage/ig.test(ua);
+}
+
+/**
+ * @description 根据userAgent判断当前设备是否为手机
+ * @returns 判断结果
+ */
+function isMobile () {
+    return /android|iphone|ipod/ig.test(ua);
+}
+
 /**
  * @description 时间格式化
  * @param {Number|Date} time 待判断的时间，可以是Number/Date类型
@@ -127,6 +145,23 @@ function hasProperty(obj, propStr){
 }
 
 /**
+ * 继承
+ * @param {Any} subType 子类 
+ * @param {Any} superType 父类
+ */
+function inherit(subType, superType) {
+    if(!('prototype' in subType)){
+        throw Error('argument "subType" must be a constructor');
+    }
+    if(!('prototype' in superType)){
+        throw Error('argument "superType" must be a constructor');
+    }
+    let proto = Object.create(superType.prototype);
+    subType.prototype = proto;
+    subType.prototype.constructor = subType;
+}
+
+/**
  * @description 生成用于判断数据类型的函数，如"String"、"Array"
  * @param {String} typeStr 目标类型
  * @returns {Function} 判断对应类型的目标函数
@@ -209,33 +244,20 @@ function deepClone(obj){
     return result;
 }
 
-const ua = navigator.userAgent;
 
-/**
- * @description 根据userAgent判断当前应用是否为微信
- * @returns 判断结果
- */
-function isWechat () {
-    return /micromessage/ig.test(ua);
-}
-
-/**
- * @description 根据userAgent判断当前设备是否为手机
- * @returns 判断结果
- */
-function isMobile () {
-    return /android|iphone|ipod/ig.test(ua);
-}
 
 export {
     isEmail,
     isMobileNo,
     isUrl,
+    isWechat,
+    isMobile,
     formatTime,
     formatDecimal,
     throttle,
     debounce,
     hasProperty,
+    inherit,
     genTypeCheckFn,
     isString,
     isArray,
@@ -245,7 +267,5 @@ export {
     isFunction,
     isPromise,
     filterToJSON,
-    deepClone,
-    isWechat,
-    isMobile
+    deepClone
 }
