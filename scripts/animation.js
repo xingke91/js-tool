@@ -22,17 +22,17 @@ function wrapHandle(fn, animate){
     function running() {
         let _step = (60 / _op.speed);
         _op._counter = (++_op._counter) % _step;
-        if(_op.state == 2 || _op._counter !== 0){
+        if (_op.state == 2 || _op._counter !== 0) {
             cancelAnimationFrame(_op._timer);
             return (_op._timer = requestAnimationFrame(running));
         }
         _op.currIdx++;
         //动画执行到最后一组数据，默认结束
-        if(_op.data && _op.currIdx === _op.data.length){
+        if (_op.data && _op.currIdx === _op.data.length) {
             _op.state = 3;
             cancelAnimationFrame(_op._timer);
             _op._timer = null;
-            if(isFunction(animate.$hooks.onStop)){
+            if (isFunction(animate.$hooks.onStop)) {
                 animate.$hooks.onStop();
             }
             return;
@@ -63,32 +63,32 @@ function wrapHandle(fn, animate){
  *      onStop: Function    //动画执行结束时执行的钩子函数
  * }
  */
-function Animate(options){
+function Animate(options) {
     this.$hooks = {};
     this[initOptions](options);
 }
 
 Animate.prototype = Object.assign(Animate.prototype, {
-    [initOptions]: function (opts) {
-        opts = opts || {};
+    [initOptions] (opts) {
+        if (opts || isObject(opts)) return;
         let _op = privates[this] || {};
         ['autoRun', 'speed'].forEach(k => sameType(opts[k], defaultVals[k]) && (_op[k] = opts[k]));
         _op = Object.assign({}, defaultVals, _op);
         _op.speed = _op.speed <= 20 ? 20 : (_op.speed >= 60 ? 60 : 30);
-        if(opts.cache){
+        if (opts.cache) {
             this.$cache = opts.cache;
         }
-        if(Array.isArray(opts.data)){
+        if (Array.isArray(opts.data)) {
             _op.data = opts.data;
         }
-        if(isFunction(opts.run)){
+        if (isFunction(opts.run)) {
             this.$handle = wrapHandle(opts.run, this);
         }
-        if(isFunction(opts.parse)){
+        if (isFunction(opts.parse)) {
             _op.parse = opts.parse;
         }
         hookNames.forEach(h => {
-            if(!isFunction(opts[h])) return;
+            if (!isFunction(opts[h])) return;
             this.$hooks[h] = opts[h];
         });
         privates[this] = Object.assign(privates[this] || {}, _op);
@@ -98,43 +98,43 @@ Animate.prototype = Object.assign(Animate.prototype, {
     },
     setAnimate (data, options) {
         let _op = privates[this];
-        if(data && Array.isArray(data)){
+        if (data && Array.isArray(data)) {
             _op.data = data;
         }
-        if(isObject(data)){
+        if (isObject(data)) {
             options = Object.assign(_op, options || {}, data);
         }
         this[initOptions](options);
-        if(_op.autoRun && this.$handle){
+        if (_op.autoRun && this.$handle) {
             this.run();
         }
         return this;
     },
     on (name, fn) {
-        if(!hookNames.includes(name)) return;
-        if(!isFunction(fn)) return;
+        if (!hookNames.includes(name)) return;
+        if (!isFunction(fn)) return;
         this.$hooks[name] = fn;
         return this;
     },
     toggle () {
         _op = privates[this];
-        if(_op.state == 1 || _op.state == 3) return null;
+        if (_op.state == 1 || _op.state == 3) return null;
         _op.state = _op.state == 1 ? 2 : 1;
-        if(_op.state == 2 && isFunction(this.$hooks.onPause)){
+        if (_op.state == 2 && isFunction(this.$hooks.onPause)) {
             this.$hooks.onPause();
         }
         return this.getState();
     },
     stop (isClear) {
         let _op = privates[this];
-        if(_op.state == 0 || _op.state == 3) return;
+        if (_op.state == 0 || _op.state == 3) return;
         cancelAnimationFrame(_op._timer);
         _op._timer = null;
         _op.state == 3;
-        if(isFunction(this.$hooks.onStop)){
+        if (isFunction(this.$hooks.onStop)) {
             this.$hooks.onStop();
         }
-        if(isClear === true){
+        if (isClear === true) {
             _op.data = null;
             this[initOptions]();
         }
@@ -146,17 +146,16 @@ Animate.prototype = Object.assign(Animate.prototype, {
         this.$cache = null;
     },
     run (handle, options) {
-        if(isFunction(handle)){
+        if (isFunction(handle)) {
             this.$handle = wrapHandle(handle, this);
-        }
-        if(isObject(handle)){
+        } else if (isObject(handle)) {
             options = Object.assign(options || {}, handle);
         }
         this[initOptions](options);
-        if(!this.$handle){
+        if (!this.$handle) {
             throw Error('the function to executing is null!');
         }
-        if(isFunction(this.$hooks.onStart)){
+        if (isFunction(this.$hooks.onStart)) {
             this.$hooks.onStart();
         }
         privates[this]._timer = requestAnimationFrame(this.$handle);
