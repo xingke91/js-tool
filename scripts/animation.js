@@ -71,7 +71,7 @@ function Animate(options){
 Animate.prototype = Object.assign(Animate.prototype, {
     [initOptions]: function (opts) {
         opts = opts || {};
-        let _op = {};
+        let _op = privates[this] || {};
         ['autoRun', 'speed'].forEach(k => sameType(opts[k], defaultVals[k]) && (_op[k] = opts[k]));
         _op = Object.assign({}, defaultVals, _op);
         _op.speed = _op.speed <= 20 ? 20 : (_op.speed >= 60 ? 60 : 30);
