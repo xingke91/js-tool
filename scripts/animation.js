@@ -5,7 +5,7 @@
 import { isObject, isFunction, sameType } from './utils.js';
 //用于存放私有属性或方法的Map对象
 const privates = new Map();
-const initOption = Symbol('operateArgs');
+const initOptions = Symbol('initOptions');
 const hookNames = ['onStart', 'onPause', 'onStop'];
 const animateStates = ['initial', 'running', 'paused', 'end'];
 const defaultVals = {
@@ -17,7 +17,7 @@ const defaultVals = {
     _counter: 0
 };
 
-function wrapHandlder(fn, animate){
+function wrapHandle(fn, animate){
     let _op = privates[animate], _handle = fn;
     function running() {
         let _step = (60 / _op.speed);
@@ -65,11 +65,11 @@ function wrapHandlder(fn, animate){
  */
 function Animate(options){
     this.$hooks = {};
-    this[initOption](options);
+    this[initOptions](options);
 }
 
 Animate.prototype = Object.assign(Animate.prototype, {
-    [initOption]: function (opts) {
+    [initOptions]: function (opts) {
         opts = opts || {};
         let _op = {};
         ['autoRun', 'speed'].forEach(k => sameType(opts[k], defaultVals[k]) && (_op[k] = opts[k]));
@@ -82,7 +82,7 @@ Animate.prototype = Object.assign(Animate.prototype, {
             _op.data = opts.data;
         }
         if(isFunction(opts.run)){
-            this.$handler = wrapHandlder(opts.run, this);
+            this.$handle = wrapHandle(opts.run, this);
         }
         if(isFunction(opts.parse)){
             _op.parse = opts.parse;
@@ -104,8 +104,8 @@ Animate.prototype = Object.assign(Animate.prototype, {
         if(isObject(data)){
             options = Object.assign(_op, options || {}, data);
         }
-        this[initOption](options);
-        if(_op.autoRun && this.$handler){
+        this[initOptions](options);
+        if(_op.autoRun && this.$handle){
             this.run();
         }
         return this;
@@ -136,7 +136,7 @@ Animate.prototype = Object.assign(Animate.prototype, {
         }
         if(isClear === true){
             _op.data = null;
-            this[initOption]();
+            this[initOptions]();
         }
     },
     clear () {
@@ -145,20 +145,20 @@ Animate.prototype = Object.assign(Animate.prototype, {
         this.$hooks = {};
         this.$cache = null;
     },
-    run (handler, options) {
-        if(isFunction(handler)){
-            this.$handler = wrapHandlder(handler, this);
+    run (handle, options) {
+        if(isFunction(handle)){
+            this.$handle = wrapHandle(handle, this);
         }
-        if(isObject(handler)){
-            options = Object.assign(options || {}, handler);
+        if(isObject(handle)){
+            options = Object.assign(options || {}, handle);
         }
-        this[initOption](options);
-        if(!this.$handler){
+        this[initOptions](options);
+        if(!this.$handle){
             throw Error('the function to executing is null!');
         }
         if(isFunction(this.$hooks.onStart)){
             this.$hooks.onStart();
         }
-        privates[this]._timer = requestAnimationFrame(this.$handler);
+        privates[this]._timer = requestAnimationFrame(this.$handle);
     }
 });
