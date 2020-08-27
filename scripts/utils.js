@@ -188,6 +188,33 @@ const isFunction = genTypeCheckFn('Function');
 const isPromise = genTypeCheckFn('Promise');
 
 /**
+ * 生成一个hash字符串
+ * @param {Number} length 获取的hash字符串的长度（不小于5）
+ */
+function getHash(length){
+    let tempStr = '0123456789abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let _mul = tempStr.length;
+    length = (typeof(length) === 'number' && length > 5) ? length : 8;
+    let str = Array(length).fill().map(v => tempStr[Math.floor(Math.random() * _mul)]);
+    return str.join('');
+}
+
+/**
+ * 比较两个数据类型是否相同
+ * @param {any} arg1 待比较的第一个参数
+ * @param {any} arg2 待比较的第二个参数
+ */
+function sameType(arg1, arg2){
+    if(arg1 === null || arg1 === undefined){
+        if(arg1 === arg2) return true;
+        return false;
+    };
+    if(arg2 === null || arg2 === undefined) return false;
+    return (arg1 === arg2) || (arg1.constructor === arg2.constructor);
+}
+
+
+/**
  * @description 按条件过滤对象属性并格式化，生成满足条件的JSON对象
  * @param {Object} obj 可转换成JSON格式的对象
  * @param {?Object|Array} options 格式化选项，可包含<Function>filter、<Array>includes、<Array>excludes三个选项中的任一个
@@ -266,6 +293,8 @@ export {
     isObject,
     isFunction,
     isPromise,
+    getHash,
+    sameType,
     filterToJSON,
     deepClone
 }
