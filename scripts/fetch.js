@@ -49,8 +49,8 @@ function injectHook(instance, options) {
     // 添加响应拦截器
     instance.interceptors.response.use(res => {
         let _success = options.success || axiosHooks.success;
-        _success(res);
-        return res;
+        let _res = _success(res);
+        return (_res || res);
     }, err => {
         _error();
         return Promise.reject(err);
@@ -105,7 +105,7 @@ let fetch = {
 ['get', 'post', 'put', 'delete'].forEach(m => {
     fetch[m] = function(url, pms, options){
         let instance = getFetch(Object.assign({}, options, { method: m }));
-        if(m === 'get'){
+        if(m === 'get' && !pms.params){
             pms = { params: pms };
         }
         return instance[m](url, pms);
