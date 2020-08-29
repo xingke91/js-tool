@@ -6,19 +6,21 @@ import { isObject, isFunction, sameType } from './utils.js';
 //用于存放私有属性或方法的Map对象
 const privates = new Map();
 const initOptions = Symbol('initOptions');
-const hookNames = ['onStart', 'onPause', 'onStop'];
+const hookNames = ['onStart', 'onPause', 'onEnd'];
 const animateStates = ['initial', 'running', 'paused', 'end'];
 const defaultVals = {
     currIdx: -1,        //当前执行数据索引,可以理解为动画已经执行的次数
     speed: 30,          //每秒执行30次
     state: 0,           //动画状态（0：未开始，1：执行中，2：暂停中，3：已结束）
     autoRun: false,     //是否自动执行
+    loop: false,        //是否循环执行
     _timer: null,
     _counter: 0
 };
 
 function wrapHandle(fn, animate){
     let _op = privates[animate], _handle = fn;
+    let _self = animate;
     function running() {
         let _step = (60 / _op.speed);
         _op._counter = (++_op._counter) % _step;
@@ -29,18 +31,19 @@ function wrapHandle(fn, animate){
         _op.currIdx++;
         //动画执行到最后一组数据，默认结束
         if (_op.data && _op.currIdx === _op.data.length) {
-            _op.state = 3;
             cancelAnimationFrame(_op._timer);
-            _op._timer = null;
-            if (isFunction(animate.$hooks.onStop)) {
-                animate.$hooks.onStop();
+            if(!_op.loop){
+                _op.state = 3;
+            }else{
+                _op.currIdx = -1;
+                _op._timer = requestAnimationFrame(running);
             }
-            return;
+            return (_self.$hooks.onEnd && _self.$hooks.onEnd(!_op.loop));
         }
         _op.state = 1;
         let _parse = isFunction(_op.parse) ? _op.parse : d => d;
         let _data = _op.data ? _parse(_op.data[_op.currIdx]) : null;
-        _handle(animate, _op.currIdx, _data);
+        _handle(_self, _op.currIdx, _data);
     }
     return running;
 }
@@ -54,13 +57,14 @@ function wrapHandle(fn, animate){
  *      cache: Any,         //可用来缓存部分数据（此数据用户可见）
  *      speed: Number       //动画执行速度（每秒钟帧数，最终会调整为20,30,60中的一个）
  *      autoRun: Boolean    //是否自动执行
+ *      loop: Boolean       //是否循环执行
  *      data: Array         //动画执行过程中用到的数据（要求数组形式，可以不传，如果不传，则用null作为参数传递给run函数）
  *      parse：Function     //数据的解析函数（执行动画时，每次从数组中取出一个元素，通过该函数进行解析后作为
  *                          //run函数的参数，如果没有该函数，则传入数组对应元素）
  *      run: Function       //动画执行过程中执行的函数（最终必须存在，可在构造函数，setAnimate或者run方法中传入）
- *      onStart：Function   //动画刚开始执行时，执行的钩子函数（钩子函数执行时没有参数）
+ *      onStart：Function   //动画刚开始执行时，执行的钩子函数（除onEnd外，钩子函数执行时没有参数）
  *      onPause: Function   //动画暂停时执行的构造函数，每次暂停时都会执行
- *      onStop: Function    //动画执行结束时执行的钩子函数
+ *      onEnd: Function     //动画每一轮执行结束时执行的钩子函数（入参表示动画是否真正结束，当为false时意为动画下一轮执行即将开始）
  * }
  */
 function Animate(options) {
@@ -71,7 +75,7 @@ function Animate(options) {
 Animate.prototype[initOptions] = function (opts) {
     if (opts || isObject(opts)) return;
     let _op = privates[this] || {};
-    ['autoRun', 'speed'].forEach(k => sameType(opts[k], defaultVals[k]) && (_op[k] = opts[k]));
+    ['speed', 'autoRun', 'loop'].forEach(k => sameType(opts[k], defaultVals[k]) && (_op[k] = opts[k]));
     _op = Object.assign({}, defaultVals, _op);
     _op.speed = _op.speed <= 20 ? 20 : (_op.speed >= 60 ? 60 : 30);
     if (opts.cache) {
@@ -121,9 +125,9 @@ Animate.prototype.on = function (name, fn) {
 
 Animate.prototype.toggle = function () {
     _op = privates[this];
-    if (_op.state == 1 || _op.state == 3) return null;
-    _op.state = _op.state == 1 ? 2 : 1;
-    if (_op.state == 2 && isFunction(this.$hooks.onPause)) {
+    if (_op.state == 0 || _op.state == 3) return null;
+    _op.state ^= 3;
+    if (_op.state == 2 && this.$hooks.onPause) {
         this.$hooks.onPause();
     }
     return this.getState();
@@ -133,14 +137,10 @@ Animate.prototype.stop = function (isClear) {
     let _op = privates[this];
     if (_op.state == 0 || _op.state == 3) return;
     cancelAnimationFrame(_op._timer);
-    _op._timer = null;
     _op.state == 3;
-    if (isFunction(this.$hooks.onStop)) {
-        this.$hooks.onStop();
-    }
+    this.$hooks.onEnd && this.$hooks.onEnd(true);
     if (isClear === true) {
-        _op.data = null;
-        this[initOptions]();
+        this.$cache = _op.data = null;
     }
 }
 
@@ -161,9 +161,7 @@ Animate.prototype.run = function (handle, options) {
     if (!this.$handle) {
         throw Error('the function to executing is null!');
     }
-    if (isFunction(this.$hooks.onStart)) {
-        this.$hooks.onStart();
-    }
+    this.$hooks.onStart && this.$hooks.onStart();
     privates[this]._timer = requestAnimationFrame(this.$handle);
 }
 

@@ -224,14 +224,10 @@ function filterToJSON (obj, options){
     if(!(obj instanceof Object)){
         throw Error('paramter "obj" must be an Object!');
     }
-    let opts = options,
-        optAllows = ['filter', 'includes', 'excludes'];
+    let opts = options || {};
     if(Array.isArray(opts)){
         return JSON.stringify(obj, opts);
     };
-    if(!opts || !optAllows.some(opt => (opt in opts))){
-        return JSON.stringify(obj);
-    }
     return JSON.stringify(obj, (key, val) => {
         if(!key) return val;
         if(opts.filter && typeof(opts.filter) === 'function'){
