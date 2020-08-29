@@ -8,9 +8,10 @@ const privates = new Map();
 const initOptions = Symbol('initOptions');
 const hookNames = ['onStart', 'onPause', 'onEnd'];
 const animateStates = ['initial', 'running', 'paused', 'end'];
+const speedStages = [10, 20, 30, 60];
 const defaultVals = {
     currIdx: -1,        //当前执行数据索引,可以理解为动画已经执行的次数
-    speed: 30,          //每秒执行30次
+    speed: 20,          //默认每秒执行20次
     state: 0,           //动画状态（0：未开始，1：执行中，2：暂停中，3：已结束）
     autoRun: false,     //是否自动执行
     loop: false,        //是否循环执行
@@ -29,7 +30,8 @@ function wrapHandle(fn, animate){
             return (_op._timer = requestAnimationFrame(running));
         }
         _op.currIdx++;
-        //动画执行到最后一组数据，默认结束
+        //当_op.data存在且动画执行到最后一组数据，默认一轮循环结束
+        //如果_op.loop为false，则动画结束，否则动画将从头开始继续下一轮执行
         if (_op.data && _op.currIdx === _op.data.length) {
             cancelAnimationFrame(_op._timer);
             if(!_op.loop){
@@ -43,7 +45,8 @@ function wrapHandle(fn, animate){
         _op.state = 1;
         let _parse = isFunction(_op.parse) ? _op.parse : d => d;
         let _data = _op.data ? _parse(_op.data[_op.currIdx]) : null;
-        _handle(_self, _op.currIdx, _data);
+        _handle(_self, _op.currIdx, _data, _op.data);
+        _op.timer = requestAnimationFrame(running);
     }
     return running;
 }
@@ -55,7 +58,8 @@ function wrapHandle(fn, animate){
  * options对象属性如下（传入其他属性不会发挥作用），均为可选属性，但最终执行动画时，必须存在run方法
  * {    
  *      cache: Any,         //可用来缓存部分数据（此数据用户可见）
- *      speed: Number       //动画执行速度（每秒钟帧数，最终会调整为20,30,60中的一个）
+ *      speed: Number       //动画执行速度（每秒钟帧数，最终会调整为10,20,30,60中的一个），
+ *                          //默认每秒执行20次（默认显示器刷新频率为60Hz，如果刷新频率更高，则动画执行20帧时间越短，动画越快）
  *      autoRun: Boolean    //是否自动执行
  *      loop: Boolean       //是否循环执行
  *      data: Array         //动画执行过程中用到的数据（要求数组形式，可以不传，如果不传，则用null作为参数传递给run函数）
@@ -69,15 +73,16 @@ function wrapHandle(fn, animate){
  */
 function Animate(options) {
     this.$hooks = {};
+    privates[this] = {};
     this[initOptions](options);
 }
 
 Animate.prototype[initOptions] = function (opts) {
-    if (opts || isObject(opts)) return;
     let _op = privates[this] || {};
     ['speed', 'autoRun', 'loop'].forEach(k => sameType(opts[k], defaultVals[k]) && (_op[k] = opts[k]));
     _op = Object.assign({}, defaultVals, _op);
-    _op.speed = _op.speed <= 20 ? 20 : (_op.speed >= 60 ? 60 : 30);
+    _op.speed = speedStages.find(v => _op.speed >= v) || speedStages.slice(-1)[0];
+    _op.speed = _op.speed <= 10 ? 10 : (_op.speed >= 60 ? 60 : 30);
     if (opts.cache) {
         this.$cache = opts.cache;
     }
@@ -109,7 +114,7 @@ Animate.prototype.setAnimate = function (data, options) {
     if (isObject(data)) {
         options = Object.assign(_op, options || {}, data);
     }
-    this[initOptions](options);
+    options && this[initOptions](options);
     if (_op.autoRun && this.$handle) {
         this.run();
     }
@@ -124,8 +129,8 @@ Animate.prototype.on = function (name, fn) {
 }
 
 Animate.prototype.toggle = function () {
-    _op = privates[this];
-    if (_op.state == 0 || _op.state == 3) return null;
+    let _op = privates[this];
+    if (_op.state == 0 || _op.state == 3) return;
     _op.state ^= 3;
     if (_op.state == 2 && this.$hooks.onPause) {
         this.$hooks.onPause();
@@ -157,7 +162,7 @@ Animate.prototype.run = function (handle, options) {
     } else if (isObject(handle)) {
         options = Object.assign(options || {}, handle);
     }
-    this[initOptions](options);
+    options && this[initOptions](options);
     if (!this.$handle) {
         throw Error('the function to executing is null!');
     }
@@ -165,3 +170,4 @@ Animate.prototype.run = function (handle, options) {
     privates[this]._timer = requestAnimationFrame(this.$handle);
 }
 
+export { Animate }

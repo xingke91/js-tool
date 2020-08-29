@@ -172,7 +172,7 @@ function genTypeCheckFn (typeStr){
     }
     let type = typeStr;
     return function (val){
-        Object.prototype.toString.call(val) === `[object ${type}]`;
+        return Object.prototype.toString.call(val) === `[object ${type}]`;
     }
 }
 
