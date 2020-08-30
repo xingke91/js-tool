@@ -111,7 +111,7 @@ function debounce(fn, interval){
     }
     return function(){
         let ctx = this,
-            args = Arrar.prototype.slice.call(arguments),
+            args = Array.prototype.slice.call(arguments),
             now = new Date().getTime();
         if(lastTime && now - lastTime < interval){
             clearTimeout(timer);
