@@ -2,7 +2,7 @@
  * 数据校验相关功能
  * fanlinjun
  */
-import { isObject, isFunction, isString, isNum, isArray, isLonlat } from './utils.js';
+import { isObject, isFunction, isString, isNum, isArray } from './utils.js';
 
 //初始化选项的匿名函数名
 const initOptions = Symbol('initOptions');
@@ -37,10 +37,6 @@ const rules = {
     mobile: {
         name: '手机号',
         assert: (val) => isString(val) && phonePtn.test(val),
-    },
-    lonlat: {
-        name: '地理坐标',
-        assert: (val) => isLonlat(val)
     },
     max: {
         name: '最大值',
