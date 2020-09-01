@@ -113,6 +113,22 @@ function parseObject(item, target, ctx) {
 }
 
 /**
+ * 逐条解析校验选项的方法
+ * @param {String|Object|Array} item 待解析的选项 
+ * @param {Array} target 存放解析后生成的统一形式的校验选项的数组 
+ * @param {Validator} ctx 当前上下文对象，即Validator实例
+ */
+function parseOptionItems (item, target, ctx) {
+    if (isString(item)) {
+        parseString(item, target);
+    } else if (isObject(item)) {
+        parseObject(item, target, ctx);
+    } else if (isArray(item)) {
+        item.forEach(s => isString(s) ? parseString(s, target) : parseObject(s, target, ctx));
+    }
+}
+
+/**
  * 数据校验类，支持单项数据校验和对象属性逐项校验
  * 1. 单项校验，如: <Validator>.assert('12345678@qq.com', 'email') 或 <Validator>.assert(100, { range: [5, 10] });
  * 2. 对象逐个属性校验，如：<Validator>.validate({ a: 'hahah', b: '1234567@qq.com' }, { a: 'required', b: 'email' });
@@ -137,13 +153,7 @@ Validator.prototype[initOptions] = function (opts) {
     Object.keys(opts).forEach(key => {
         _op[key] = _op[key] || [];
         let _item = opts[key];
-        if (isString(_item)) {
-            parseString(_item, _op[key]);
-        } else if (isObject(_item)) {
-            parseObject(_item, _op[key], this);
-        } else if (isArray(_item)) {
-            _item.forEach(s => isString(s) ? parseString(s, _op[key]) : parseObject(s, _op[key], this));
-        }
+        parseOptionItems(_item, _op[key], this);
     });
     this.$options = _op;
 }
@@ -227,15 +237,7 @@ Validator.prototype.assert = function (val, options) {
     if (options === undefined) {
         throw Error('简单类型判断时参数\'options\'不可缺少')
     }
-    if (isString(options)) {
-        parseString(options, _opts);
-    } else if (isObject(options)) {
-        parseObject(options, _opts, this);
-    } else if (isArray(options)) {
-        options.forEach(o => {
-            isString(o) ? parseString(o, _opts) : parseObject(o, _opts, this);
-        });
-    }
+    parseOptionItems(options, _opts, this);
     if (!_opts.length) {
         return val === options;
     }
