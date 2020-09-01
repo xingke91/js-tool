@@ -50,7 +50,7 @@ const rules = {
         assert: (val, base) => isNum(val) && val >= base
     },
     range: {
-        name: '范围',
+        name: '数值范围',
         base: (base) => isArray(base) && base.length == 2 && base.every(v => isNum(v)),
         assert: (val, range) => (isNum(val) && val >= range[0] && val <= range[1])
     },
