@@ -2,7 +2,7 @@
  * 数据校验相关功能
  * fanlinjun
  */
-import { isObject, isFunction, isString, isNum, isArray } from './utils.js';
+import { isObject, isFunction, isString, isNum, isArray, isLonlat } from './utils.js';
 
 //初始化选项的匿名函数名
 const initOptions = Symbol('initOptions');
@@ -14,6 +14,8 @@ const phonePtn = /^1[3-9]\d{9}$/;
 //assert方法中支持的待校验数据的类型集合（此处不包含null）;
 const assertTypes = ['string', 'number', 'boolean', 'undefined', 'symbol'];
 
+//解析校验选项时排除解析的字段
+const parseExcepts = ['msg', 'message'];
 /**
  * 可选校验校验集合
  * {
@@ -36,6 +38,10 @@ const rules = {
         name: '手机号',
         assert: (val) => isString(val) && phonePtn.test(val),
     },
+    lonlat: {
+        name: '地理坐标',
+        assert: (val) => isLonlat(val)
+    },
     max: {
         name: '最大值',
         base: (base) => isNum(base),
@@ -48,7 +54,7 @@ const rules = {
     },
     range: {
         name: '范围',
-        base: (base) => isArray(base) && base.length >= 2,
+        base: (base) => isArray(base) && base.length == 2 && base.every(v => isNum(v)),
         assert: (val, range) => (isNum(val) && val >= range[0] && val <= range[1])
     },
     limit: {
@@ -68,7 +74,7 @@ const rules = {
     },
     rangeLength: {
         name: '长度范围',
-        base: (base) => isArray(base) && base.length >= 2,
+        base: (base) => isArray(base) && base.length == 2 && base.every(v => isNum(v)),
         assert: (val, range) => (isString(val) && val.length >= range[0] && val.length <= range[1])
     }
 };
@@ -79,31 +85,31 @@ const rules = {
  */
 function parseString(item, target) {
     let _strategy = target.filter(v => v.hasOwnProperty(item))[0];
-    if(_strategy) return;
+    if (_strategy) return;
     target.push({ _rule: item, [item]: true });
 }
 
 /**
  * 解析Object类型的校验选项，如：
  * {
- *     userName: { required: true, msg: '用户名必填' }
+ *     userName: { required: true, rangeLength: [5, 10], msg: '用户名填写不符合要求！' }
  * }
  */
 function parseObject(item, target, ctx) {
-    if(!isObject(item)) return;
+    if (!isObject(item)) return;
     let _msg = item.msg || item.message;
-    const _excepts = ['msg', 'message'];
-    Object.keys(item).filter(v => !_excepts.includes(v)).forEach(key => {
-        let _rule = ctx.$own[key] || rules[key];
-        if(!_rule) return;
+    Object.keys(item).filter(v => !parseExcepts.includes(v)).forEach(key => {
+        if (!(ctx.$own[key] || rules[key])) return;
         let isTrue = !_rule.base ? true : _rule.base(item[key]);
-        if(!isTrue){
-            throw Error(`"${JSON.stringify(item[key])}"为校验规则${key}的非法基准值！`);
+        if (!isTrue) {
+            throw Error(`校验规则${key}的基准值"${JSON.stringify(item[key])}"非法！`);
         }
         let _new = { _rule: key, [key]: item[key] };
-        if(_msg) _new.msg = _msg;
+        if (_msg) _new.msg = _msg;
         let _strategy = target.filter(r => r.hasOwnProperty(key))[0];
-        if(_strategy) return Object.assign(_strategy, _new);
+        if (_strategy) {
+            return Object.assign(_strategy, _new);
+        }
         target.push(_new);
     });
 }
@@ -196,7 +202,7 @@ Validator.prototype.assert = function (val, options) {
             isString(options) ? parseString(options, _opts) : parseObject(options, _opts, this);
         });
     }
-    if(!_opts.length){
+    if (!_opts.length) {
         return val === options;
     }
     let res = true, _rule;
@@ -237,7 +243,7 @@ Validator.prototype.validate = function (val, onInvalid, options) {
             if (_failMsg) return;
             _rule = this.$own[o._rule] || rules[o._rule];
             if (!_rule.assert(val[key], o[o._rule])) {
-                _failMsg = o.msg || `字段${key}${_rule.name || ''}校验不通过`;
+                _failMsg = o.msg || `字段"${key}"${_rule.name || ''}校验不通过`;
             }
         });
     }
