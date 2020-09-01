@@ -72,7 +72,7 @@ const rules = {
     rangeLength: {
         name: '长度范围',
         base: (base) => isArray(base) && base.length == 2 && base.every(v => isNum(v)),
-        assert: (val, range) => (isString(val) && val.length >= range[0] && val.length <= range[1])
+        assert: (val, range) => ((isString(val) || isArray(val)) && val.length >= range[0] && val.length <= range[1])
     }
 };
 
