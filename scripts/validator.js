@@ -62,17 +62,17 @@ const rules = {
     maxLength: {
         name: '最大长度',
         base: (base) => isNum(base) && base >= 0,
-        assert: (val, base) => (val && isNum(val.length)) && val.length <= base
+        assert: (val, base) => (isString(val) || isArray(val)) && val.length <= base
     },
     minLength: {
         name: '最小长度',
         base: (base) => isNum(base) && base >= 0,
-        assert: (val, base) => (val && isNum(val.length)) && val.length >= base
+        assert: (val, base) => (isString(val) || isArray(val)) && val.length >= base
     },
     rangeLength: {
         name: '长度范围',
         base: (base) => isArray(base) && base.length == 2 && base.every(v => (isNum(v) && v >= 0)),
-        assert: (val, range) => ((val && isNum(val.length)) && val.length >= range[0] && val.length <= range[1])
+        assert: (val, range) => (isString(val) || isArray(val)) && val.length >= range[0] && val.length <= range[1]
     }
 };
 
