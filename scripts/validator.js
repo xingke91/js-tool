@@ -2,10 +2,11 @@
  * 数据校验相关功能
  * fanlinjun
  */
-import { isObject, isFunction, isString, isNum, isArray } from './utils.js';
+import { isObject, isFunction, isString, isNum, isArray, isLonlat } from './utils.js';
 
 //初始化选项的匿名函数名
 const initOptions = Symbol('initOptions');
+const innerValidate = Symbol('innerValidate');
 
 //邮箱和手机号校验使用的正则
 const emailPtn = /^[\w\-\.]+@([\w\-]+\.){1,3}[a-z]+$/i;
@@ -17,7 +18,7 @@ const assertTypes = ['string', 'number', 'boolean', 'undefined', 'symbol'];
 //解析校验选项时排除解析的字段
 const parseExcepts = ['msg', 'message'];
 /**
- * 可选校验规则集合
+ * 可选校验校验集合
  * {
  *      name: 校验规则名称
  *      base：基准值判断函数（当校验规则需要传入一个基准值作比较时，通过该函数判断基准值是否符合要求）
@@ -28,7 +29,7 @@ const parseExcepts = ['msg', 'message'];
 const rules = {
     required: {
         name: '非空',
-        assert: (val) => (val === 0 || !!val.toString().trim()),
+        assert: (val) => (val === 0 || !!(val && val.toString().trim())),
     },
     email: {
         name: '邮箱',
@@ -37,6 +38,10 @@ const rules = {
     mobile: {
         name: '手机号',
         assert: (val) => isString(val) && phonePtn.test(val),
+    },
+    lonlat: {
+        name: '地理坐标',
+        assert: (val) => isLonlat(val)
     },
     max: {
         name: '最大值',
@@ -95,10 +100,11 @@ function parseObject(item, target, ctx) {
     if (!isObject(item)) return;
     let _msg = item.msg || item.message;
     Object.keys(item).filter(v => !parseExcepts.includes(v)).forEach(key => {
-        if (!(ctx.$own[key] || rules[key])) return;
+        let _rule = (ctx.$own[key] || rules[key]);
+        if (!_rule) return;
         let isTrue = !_rule.base ? true : _rule.base(item[key]);
         if (!isTrue) {
-            throw Error(`校验规则"${key}"的基准值"${JSON.stringify(item[key])}"非法！`);
+            throw Error(`校验规则${key}的基准值"${JSON.stringify(item[key])}"非法！`);
         }
         let _new = { _rule: key, [key]: item[key] };
         if (_msg) _new.msg = _msg;
@@ -133,7 +139,6 @@ Validator.prototype[initOptions] = function (opts) {
     let _op = this.$options || {};
     if (!isObject(opts)) return;
     Object.keys(opts).forEach(key => {
-        if (!(this.$own[key] || rules[key])) return;
         _op[key] = _op[key] || [];
         let _item = opts[key];
         if (isString(_item)) {
@@ -154,7 +159,7 @@ Validator.prototype[initOptions] = function (opts) {
  */
 Validator.prototype.addRule = function (ruleName, rule) {
     if (!isString(ruleName)) return;
-    if (isObject(rule) && handler.assert) {
+    if (isObject(rule) && rule.assert) {
         return (this.$own[ruleName] = rule);
     }
     if (!isFunction(rule)) return;
@@ -211,25 +216,25 @@ Validator.prototype.assert = function (val, options) {
 }
 
 /**
- * 
- * @param {Object} val 待校验数据对象
- * @param {Function|Object} onInvalid 当校验不通过时执行的回调函数，如果为Object类型，则视为数据校验选项 
- * @param {Object} options 数据校验选项（可选参数，如果传入，则要去必须为Object对象）
+ * 内部校验方法（可实现对象属性的递归校验）
+ * @param {Object} val 待校验对象
  */
-Validator.prototype.validate = function (val, onInvalid, options) {
-    if (isFunction(onInvalid)) {
-        this.$onInvalid = onInvalid;
-    } else if (isObject(onInvalid)) {
-        options = Object.assign({}, onInvalid, options);
-    }
-    options && this[initOptions](options);
+Validator.prototype[innerValidate] = function (val) {
     if (!isObject(val)) {
-        let msg = 'parameter "val" must be an Object!';
-        this.$onInvalid && this.$onInvalid(msg);
-        throw Error(msg);
+        throw Error('parameter "val" must be an Object!');
     }
     let _op = this.$options, _opt, _failMsg;
     for (let key in val) {
+        if(isObject(val[key])){
+            let res = this[innerValidate](val[key]);
+            (!res.valid) && (_failMsg = res.msg);
+        }else if(isArray(val[key])){
+            val[key].forEach(v => {
+                if(!isObject(v)) return;
+                let res = this[innerValidate](v);
+                (!res.valid) && (_failMsg = res.msg);
+            });
+        }
         if (_failMsg || !(key in _op)) continue;
         _opt = _op[key];
         if (!isArray(_opt)) continue;
@@ -242,7 +247,30 @@ Validator.prototype.validate = function (val, onInvalid, options) {
         });
     }
     if (_failMsg) {
-        this.$onInvalid && this.$onInvalid(_failMsg);
+        return { valid: false, msg: _failMsg };
+    }
+    return { valid: true };
+}
+
+/**
+ * 
+ * @param {Object} val 待校验数据对象
+ * @param {Function|Object} onInvalid 当校验不通过时执行的回调函数，如果为Object类型，则视为数据校验选项 
+ * @param {Object} options 数据校验选项（可选参数，如果传入，则要去必须为Object对象）
+ */
+Validator.prototype.validate = function (val, onInvalid, options) {
+    if (isObject(onInvalid)) {
+        options = Object.assign({}, onInvalid, options);
+    }
+    options && this[initOptions](options);
+    if(!isObject(val)){
+        let msg = '参数类型错误，参数val必须为Object对象类型！';
+        isFunction(onInvalid) && onInvalid(msg);
+        throw Error(msg);
+    }
+    let res = this[innerValidate](val);
+    if (!res.valid) {
+        isFunction(onInvalid) && onInvalid(res.msg);
         return false;
     }
     return true;
