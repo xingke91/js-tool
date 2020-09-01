@@ -6,6 +6,7 @@ import { isObject, isFunction, isLonlat, isString, isNum, isArray } from './util
 const initOptions = Symbol('initOptions');
 const emailPtn = /^[\w\-\.]+@([\w\-]+\.){1,3}[a-z]+$/i;
 const phonePtn = /^1[3-9]\d{9}$/;
+const assertTypes = ['string', 'number', 'boolean', 'undefined', 'symbol'];
 
 /**
  * 可选校验校验集合
@@ -77,7 +78,7 @@ const rules = {
 function parseString(item, target) {
     let _strategy = target.filter(v => v.hasOwnProperty(item))[0];
     if(_strategy) return;
-    target.push({ [item]: true });
+    target.push({ _rule: item, [item]: true });
 }
 
 /**
@@ -97,7 +98,7 @@ function parseObject(item, target, ctx) {
         if(!isTrue){
             throw Error(`"${JSON.stringify(item[key])}"为校验规则${key}的非法基准值！`);
         }
-        let _new = { [key]: item[key] };
+        let _new = { _rule: key, [key]: item[key] };
         if(_msg) _new.msg = _msg;
         let _strategy = target.filter(r => r.hasOwnProperty(key))[0];
         if(_strategy) return Object.assign(_strategy, _new);
@@ -105,7 +106,14 @@ function parseObject(item, target, ctx) {
     });
 }
 
+/**
+ * 数据校验类，支持单项数据校验和对象属性逐项校验
+ * 1. 单项校验，如: <Validator>.assert('12345678@qq.com', 'email') 或 <Validator>.assert(100, { range: [5, 10] });
+ * 2. 对象逐个属性校验，如：<Validator>.validate({ a: 'hahah', b: '1234567@qq.com' }, { a: 'required', b: 'email' });
+ * @param {Object|Null} options 校验选项
+ */
 function Validator (options) {
+    this.$options = {};
     this.$own = {};
     if (options && isObject(options)) {
         this[initOptions](options);
@@ -131,17 +139,62 @@ Validator.prototype[initOptions] = function (opts) {
 }
 
 //添加校验规则
-Validator.prototype.addRule = function (ruleName, checker) {
-
+Validator.prototype.addRule = function (ruleName, handler) {
+    if (!isString(ruleName)) return;
+    if (isObject(handler) && handler.assert) {
+        return (this.$own[ruleName] = handler);
+    }
+    if (!isFunction(handler)) return;
+    this.$own[ruleName] = {
+        assert: handler
+    }
 }
 
 //添加校验配置
-Validator.prototype.addConfig = function (options) {
+Validator.prototype.addValidateOptions = function (options) {
     if (!isObject(options)) return;
     this[initOptions](options);
 }
 
-Validator.prototype.check = function (val, onInvalid, options) {
+/**
+ * 单项数据校验
+ * @param {Any} val 待校验数据 
+ * @param {Any} options 校验选项
+ */
+Validator.prototype.assert = function (val, options) {
+    if (isObject(val)) { 
+        return this.validate(val, options);
+    }
+    let _type = typeof(val);
+    if (val !== null && !assertTypes.includes(_type)) {
+        throw Error('"assert"方法只支持Object类型或者简单类型数据的判断！');
+    }
+    let _opts = [];
+    if (options === undefined) {
+        throw Error('简单类型判断时参数"options"不可缺少')
+    }
+    if (isString(options)) {
+        parseString(options, _opts);
+    } else if (isObject(options)) {
+        parseObject(options, _opts, this);
+    } else if (isArray(options)) {
+        options.forEach(opt => {
+            isString(options) ? parseString(options, _opts) : parseObject(options, _opts, this);
+        });
+    }
+    if(!_opts.length){
+        return val === options;
+    }
+    let res = true, _rule;
+    _opts.forEach(o => {
+        if (!res) return;
+        _rule = this.$own[o._rule] || rules[o._rule];
+        res = _rule.assert(val, o[o._rule]);
+    });
+    return res;
+}
+
+Validator.prototype.validate = function (val, onInvalid, options) {
     if (isFunction(onInvalid)) {
         this.$onInvalid = onInvalid;
     } else if (isObject(onInvalid)) {
@@ -153,12 +206,24 @@ Validator.prototype.check = function (val, onInvalid, options) {
         this.$onInvalid && this.$onInvalid(msg);
         throw Error(msg);
     }
-    let _op = this.$options, _rule, _opt;
+    let _op = this.$options, _opt, _failMsg;
     for (let key in val) {
-        if(!(key in _op)) continue;
+        if (_failMsg || !(key in _op)) continue;
         _opt = _op[key];
-        _rule = this.$own[key] || rules[key];
-        if (!isObject(_rule) || isFunction(_rule.assert)) continue;
-
+        if (!isArray(_opt) || !_rule.assert) continue;
+        if (!isArray(_opt)) continue;
+        let _rule;
+        _opt.forEach(o => {
+            if (_failMsg) return;
+            _rule = this.$own[o._rule] || rules[o._rule];
+            if (!_rule.assert(val[key], o[o._rule])) {
+                _failMsg = o.msg || `字段${key}${_rule.name || ''}校验不通过`;
+            }
+        });
     }
+    if (_failMsg) {
+        this.$onInvalid && this.$onInvalid(msg);
+        return false;
+    }
+    return true;
 }
