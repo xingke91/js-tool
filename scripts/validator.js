@@ -17,7 +17,7 @@ const assertTypes = ['string', 'number', 'boolean', 'undefined', 'symbol'];
 //解析校验选项时排除解析的字段
 const parseExcepts = ['msg', 'message'];
 /**
- * 可选校验校验集合
+ * 可选校验规则集合
  * {
  *      name: 校验规则名称
  *      base：基准值判断函数（当校验规则需要传入一个基准值作比较时，通过该函数判断基准值是否符合要求）
@@ -98,7 +98,7 @@ function parseObject(item, target, ctx) {
         if (!(ctx.$own[key] || rules[key])) return;
         let isTrue = !_rule.base ? true : _rule.base(item[key]);
         if (!isTrue) {
-            throw Error(`校验规则${key}的基准值"${JSON.stringify(item[key])}"非法！`);
+            throw Error(`校验规则"${key}"的基准值"${JSON.stringify(item[key])}"非法！`);
         }
         let _new = { _rule: key, [key]: item[key] };
         if (_msg) _new.msg = _msg;
@@ -242,7 +242,7 @@ Validator.prototype.validate = function (val, onInvalid, options) {
         });
     }
     if (_failMsg) {
-        this.$onInvalid && this.$onInvalid(msg);
+        this.$onInvalid && this.$onInvalid(_failMsg);
         return false;
     }
     return true;
