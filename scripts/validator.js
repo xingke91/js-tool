@@ -2,7 +2,7 @@
  * 数据校验相关功能
  * fanlinjun
  */
-import { isObject, isFunction, isLonlat, isString, isNum, isArray } from './utils.js';
+import { isObject, isFunction, isString, isNum, isArray } from './utils.js';
 const initOptions = Symbol('initOptions');
 const emailPtn = /^[\w\-\.]+@([\w\-]+\.){1,3}[a-z]+$/i;
 const phonePtn = /^1[3-9]\d{9}$/;
@@ -30,10 +30,6 @@ const rules = {
         name: '手机号',
         assert: (val) => isString(val) && phonePtn.test(val),
     },
-    // lonlat: {
-    //     name: '地理坐标',
-    //     assert: (val) => isString(val) && isLonlat(val)
-    // },
     max: {
         name: '最大值',
         base: (base) => isNum(base),
@@ -120,6 +116,11 @@ function Validator (options) {
     }
 }
 
+/**
+ * 解析校验选项的方法（匿名，外部不可访问）
+ * 如果同名字段下已有同名校验选项，则会用新的选项覆盖原来的校验选项
+ * @param {String|Object|Array} opts 校验选项
+ */
 Validator.prototype[initOptions] = function (opts) {
     let _op = this.$options || {};
     if (!isObject(opts)) return;
@@ -138,7 +139,11 @@ Validator.prototype[initOptions] = function (opts) {
     this.$options = _op;
 }
 
-//添加校验规则
+/**
+ * 添加自定义校验规则
+ * @param {String} ruleName 校验规则名称
+ * @param {Object|Function} handler 校验规则对象或者处理函数
+ */
 Validator.prototype.addRule = function (ruleName, handler) {
     if (!isString(ruleName)) return;
     if (isObject(handler) && handler.assert) {
@@ -150,16 +155,19 @@ Validator.prototype.addRule = function (ruleName, handler) {
     }
 }
 
-//添加校验配置
+/**
+ * 添加校验选项，同一字段的同名校验选项会覆盖
+ * @param {Object} options 校验选项 
+ */
 Validator.prototype.addValidateOptions = function (options) {
     if (!isObject(options)) return;
     this[initOptions](options);
 }
 
 /**
- * 单项数据校验
+ * 单项数据校验（多项数据校验也可使用）
  * @param {Any} val 待校验数据 
- * @param {Any} options 校验选项
+ * @param {Any} options 数据校验选项
  */
 Validator.prototype.assert = function (val, options) {
     if (isObject(val)) { 
@@ -194,6 +202,12 @@ Validator.prototype.assert = function (val, options) {
     return res;
 }
 
+/**
+ * 
+ * @param {Object} val 待校验数据对象
+ * @param {Function|Object} onInvalid 当校验不通过时执行的回调函数，如果为Object类型，则视为数据校验选项 
+ * @param {Object} options 数据校验选项（可选参数，如果传入，则要去必须为Object对象）
+ */
 Validator.prototype.validate = function (val, onInvalid, options) {
     if (isFunction(onInvalid)) {
         this.$onInvalid = onInvalid;
