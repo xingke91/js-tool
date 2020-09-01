@@ -39,10 +39,6 @@ const rules = {
         name: '手机号',
         assert: (val) => isString(val) && phonePtn.test(val),
     },
-    lonlat: {
-        name: '地理坐标',
-        assert: (val) => isLonlat(val)
-    },
     max: {
         name: '最大值',
         base: (base) => isNum(base),
