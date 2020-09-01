@@ -3,9 +3,15 @@
  * fanlinjun
  */
 import { isObject, isFunction, isString, isNum, isArray } from './utils.js';
+
+//初始化选项的匿名函数名
 const initOptions = Symbol('initOptions');
+
+//邮箱和手机号校验使用的正则
 const emailPtn = /^[\w\-\.]+@([\w\-]+\.){1,3}[a-z]+$/i;
 const phonePtn = /^1[3-9]\d{9}$/;
+
+//assert方法中支持的待校验数据的类型集合（此处不包含null）;
 const assertTypes = ['string', 'number', 'boolean', 'undefined', 'symbol'];
 
 /**
