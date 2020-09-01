@@ -2,9 +2,9 @@
  * 数据校验相关功能
  * fanlinjun
  */
-import { isObject, isFunction, isString, isNum, isArray, isLonlat } from './utils.js';
+import { isObject, isFunction, isString, isNum, isArray } from './utils.js';
 
-//初始化选项的匿名函数名
+//初始化选项和内部校验的匿名函数名
 const initOptions = Symbol('initOptions');
 const innerValidate = Symbol('innerValidate');
 
