@@ -236,12 +236,10 @@ Validator.prototype.validate = function (val, onInvalid, options) {
     for (let key in val) {
         if (_failMsg || !(key in _op)) continue;
         _opt = _op[key];
-        if (!isArray(_opt) || !_rule.assert) continue;
         if (!isArray(_opt)) continue;
-        let _rule;
         _opt.forEach(o => {
-            if (_failMsg) return;
-            _rule = this.$own[o._rule] || rules[o._rule];
+            let _rule = this.$own[o._rule] || rules[o._rule];
+            if (_failMsg || !_rule.assert) return;
             if (!_rule.assert(val[key], o[o._rule])) {
                 _failMsg = o.msg || `字段"${key}"${_rule.name || ''}校验不通过`;
             }
