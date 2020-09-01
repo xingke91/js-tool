@@ -154,16 +154,16 @@ Validator.prototype[initOptions] = function (opts) {
 /**
  * 添加自定义校验规则
  * @param {String} ruleName 校验规则名称
- * @param {Object|Function} handler 校验规则对象或者处理函数
+ * @param {Object|Function} rule 校验规则对象或者处理函数
  */
-Validator.prototype.addRule = function (ruleName, handler) {
+Validator.prototype.addRule = function (ruleName, rule) {
     if (!isString(ruleName)) return;
-    if (isObject(handler) && handler.assert) {
-        return (this.$own[ruleName] = handler);
+    if (isObject(rule) && handler.assert) {
+        return (this.$own[ruleName] = rule);
     }
-    if (!isFunction(handler)) return;
+    if (!isFunction(rule)) return;
     this.$own[ruleName] = {
-        assert: handler
+        assert: rule
     }
 }
 
@@ -171,7 +171,7 @@ Validator.prototype.addRule = function (ruleName, handler) {
  * 添加校验选项，同一字段的同名校验选项会覆盖
  * @param {Object} options 校验选项 
  */
-Validator.prototype.addValidateOptions = function (options) {
+Validator.prototype.addOptions = function (options) {
     if (!isObject(options)) return;
     this[initOptions](options);
 }
