@@ -18,7 +18,7 @@ const assertTypes = ['string', 'number', 'boolean', 'undefined', 'symbol'];
 //解析校验选项时排除解析的字段
 const parseExcepts = ['msg', 'message'];
 /**
- * 可选校验校验集合
+ * 默认可选校验规则集合
  * {
  *      name: 校验规则名称
  *      base：基准值判断函数（当校验规则需要传入一个基准值作比较时，通过该函数判断基准值是否符合要求）
