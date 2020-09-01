@@ -251,3 +251,5 @@ Validator.prototype.validate = function (val, onInvalid, options) {
     }
     return true;
 }
+
+export default Validator;
