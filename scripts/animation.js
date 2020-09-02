@@ -142,7 +142,7 @@ Animate.prototype.stop = function (isClear) {
     let _op = privates[this];
     if (_op.state == 0 || _op.state == 3) return;
     cancelAnimationFrame(_op._timer);
-    _op.state == 3;
+    _op.state = 3;
     this.$hooks.onEnd && this.$hooks.onEnd(true);
     if (isClear === true) {
         this.$cache = _op.data = null;
