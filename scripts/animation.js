@@ -170,4 +170,4 @@ Animate.prototype.run = function (handle, options) {
     privates[this]._timer = requestAnimationFrame(this.$handle);
 }
 
-export { Animate }
+export default Animate;
