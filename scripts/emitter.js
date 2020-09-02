@@ -30,6 +30,4 @@ const emitter = (function(){
     };
 })();
 
-export {
-    emitter
-}
+export default emitter;
