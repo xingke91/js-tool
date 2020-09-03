@@ -164,7 +164,7 @@ Validator.prototype[initOptions] = function (opts) {
  */
 Validator.prototype[innerValidate] = function (val) {
     if (!isObject(val)) {
-        throw Error('parameter \'val\' must be an Object!');
+        throw Error('参数 \'val\' 必须是Object类型数据！');
     }
     let _op = this.$options, _opt, _failMsg;
     for (let key in val) {
