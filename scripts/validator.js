@@ -98,7 +98,7 @@ function parseObject(item, target, ctx) {
     Object.keys(item).filter(v => !parseExcepts.includes(v)).forEach(key => {
         let _rule = (ctx.$own[key] || rules[key]);
         if (!_rule) return;
-        let isTrue = !_rule.base ? true : _rule.base(item[key]);
+        let isTrue = isFunction(_rule.base) ? _rule.base(item[key]) : true;
         if (!isTrue) {
             throw Error(`校验规则\'${key}\'的基准值\'${JSON.stringify(item[key])}\'非法！`);
         }
@@ -168,6 +168,16 @@ Validator.prototype[innerValidate] = function (val) {
     }
     let _op = this.$options, _opt, _failMsg;
     for (let key in val) {
+        if (_failMsg || !_op.hasOwnProperty(key)) continue;
+        _opt = _op[key];
+        if (!isArray(_opt)) continue;
+        _opt.forEach(o => {
+            let _rule = this.$own[o._rule] || rules[o._rule];
+            if (_failMsg || !_rule.assert) return;
+            if (!_rule.assert(val[key], o[o._rule])) {
+                _failMsg = o.msg || `字段\'${key}\'${_rule.name || ''}校验不通过`;
+            }
+        });
         if(isObject(val[key])){
             let res = this[innerValidate](val[key]);
             (!res.valid) && (_failMsg = res.msg);
@@ -178,16 +188,6 @@ Validator.prototype[innerValidate] = function (val) {
                 (!res.valid) && (_failMsg = res.msg);
             });
         }
-        if (_failMsg || !(key in _op)) continue;
-        _opt = _op[key];
-        if (!isArray(_opt)) continue;
-        _opt.forEach(o => {
-            let _rule = this.$own[o._rule] || rules[o._rule];
-            if (_failMsg || !_rule.assert) return;
-            if (!_rule.assert(val[key], o[o._rule])) {
-                _failMsg = o.msg || `字段\'${key}\'${_rule.name || ''}校验不通过`;
-            }
-        });
     }
     if (_failMsg) {
         return { valid: false, msg: _failMsg };
@@ -251,7 +251,7 @@ Validator.prototype.assert = function (val, options) {
 }
 
 /**
- * 
+ * 数据校验方法
  * @param {Object} val 待校验数据对象
  * @param {Function|Object} onInvalid 当校验不通过时执行的回调函数，如果为Object类型，则视为数据校验选项 
  * @param {Object} options 数据校验选项（可选参数，如果传入，则要去必须为Object对象）
