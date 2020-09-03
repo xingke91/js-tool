@@ -25,12 +25,11 @@ function wrapHandle(fn, animate){
     function running() {
         let _step = (60 / _op.speed);
         _op._counter = (++_op._counter) % _step;
+        cancelAnimationFrame(_op._timer);
         if (_op.state == 2 || _op._counter !== 0) {
-            cancelAnimationFrame(_op._timer);
             return (_op._timer = requestAnimationFrame(running));
         }
         _op.currIdx++;
-        cancelAnimationFrame(_op._timer);
         //当_op.data存在且动画执行到最后一组数据，默认一轮循环结束
         //如果_op.loop为false，则动画结束，否则动画将从头开始继续下一轮执行
         if (_op.data && _op.currIdx === _op.data.length) {
