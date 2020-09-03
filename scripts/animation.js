@@ -30,10 +30,10 @@ function wrapHandle(fn, animate){
             return (_op._timer = requestAnimationFrame(running));
         }
         _op.currIdx++;
+        cancelAnimationFrame(_op._timer);
         //当_op.data存在且动画执行到最后一组数据，默认一轮循环结束
         //如果_op.loop为false，则动画结束，否则动画将从头开始继续下一轮执行
         if (_op.data && _op.currIdx === _op.data.length) {
-            cancelAnimationFrame(_op._timer);
             if(!_op.loop){
                 _op.state = 3;
             }else{
