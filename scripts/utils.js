@@ -90,11 +90,12 @@ function throttle (fn, interval){
         interval = 1000;
     }
     return function () {
-        let args = Array.prototype.slice.call(arguments),
+        let ctx = this,
+            args = Array.prototype.slice.call(arguments),
             now = new Date().getTime();
         if(lastTime && now - lastTime < interval) return;
         lastTime = now;
-        _self(...args);
+        _self.apply(ctx, args);
     }
 }
 
@@ -119,7 +120,7 @@ function debounce(fn, interval){
         lastTime = now;
         timer = setTimeout(() => {
             clearTimeout(timer);
-            _self.call(ctx, ...args);
+            _self.apply(ctx, args);
         }, interval);
     }
 }
