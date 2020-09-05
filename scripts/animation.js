@@ -81,7 +81,6 @@ Animate.prototype[initOptions] = function (opts) {
     ['speed', 'autoRun', 'loop'].forEach(k => sameType(opts[k], defaultVals[k]) && (_op[k] = opts[k]));
     _op = Object.assign({}, defaultVals, _op);
     _op.speed = speedStages.find(v => _op.speed >= v) || speedStages.slice(-1)[0];
-    _op.speed = _op.speed <= 10 ? 10 : (_op.speed >= 60 ? 60 : 30);
     if (opts.cache) {
         this.$cache = opts.cache;
     }
