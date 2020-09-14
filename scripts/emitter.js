@@ -3,7 +3,7 @@
  * 如：emitter.on('event', <function>.bind(context));
  * */
 const emitter = (function(){
-    let events = {}, onceEventNames = [];
+    let events = {};
     return {
         //绑定事件
         on (evtName, call) {
@@ -11,21 +11,24 @@ const emitter = (function(){
             events[evtName] = call;
         },
         //绑定单次事件
-        once (evtName, call) {
+        one (evtName, call) {
             if(!evtName || typeof(call) !== 'function') return;
-            this.on(evtName, call);
-            if(onceEventNames.includes(evtName)) return;
-            onceEventNames.push(evtName);
+            this.on(evtName, function(){
+                let args = Array.prototype.slice.call(arguments, 1);
+                call(...args);
+                this.off(evtName);
+            });
+        },
+        //移除指定事件
+        off (evtName) {
+            if(!events[evtName]) return;
+            delete events[evtName];
         },
         //触发事件
         emit (evtName) {
             if(!events[evtName]) return;
             let args = Array.prototype.slice.call(arguments, 1);
             events[evtName](...args);
-            let idx = onceEventNames.indexOf(evtName);
-            if(idx === -1) return;
-            delete events[evtName];
-            onceEventNames.splice(idx, 1);
         }
     };
 })();
