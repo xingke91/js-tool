@@ -2,7 +2,7 @@
  * 数据校验相关功能
  * fanlinjun
  */
-import { isObject, isFunction, isString, isNum, isArray } from './utils.js';
+import { isObject as isObj, isFunction as isFun, isString, isNum, isArray } from './utils.js';
 
 //初始化选项和内部校验的匿名函数名
 const initOptions = Symbol('initOptions');
@@ -12,11 +12,11 @@ const innerValidate = Symbol('innerValidate');
 const emailPtn = /^[\w\-\.]+@([\w\-]+\.){1,3}[a-z]+$/i;
 const phonePtn = /^1[3-9]\d{9}$/;
 
-//assert方法中支持的待校验数据的类型集合（此处不包含null）;
-const assertTypes = ['string', 'number', 'boolean', 'undefined', 'symbol'];
+//assert方法中支持的待校验数据的类型集合（null类型单独判断）;
+const sTyps = ['string', 'number', 'boolean', 'undefined', 'symbol'];
 
 //解析校验选项时排除解析的字段
-const parseExcepts = ['msg', 'message'];
+const externals = ['msg', 'message', 'error'];
 /**
  * 默认可选校验规则集合
  * {
@@ -27,7 +27,7 @@ const parseExcepts = ['msg', 'message'];
  * }
  */
 const rules = {
-    required: {
+    nonEmpty: {
         name: '非空',
         assert: (val) => (val === 0 || !!(val && val.toString().trim())),
     },
@@ -93,14 +93,14 @@ function parseString(item, target) {
  * }
  */
 function parseObject(item, target, ctx) {
-    if (!isObject(item)) return;
-    let _msg = item.msg || item.message;
-    Object.keys(item).filter(v => !parseExcepts.includes(v)).forEach(key => {
+    if (!isObj(item)) return;
+    let _msg = item.error || item.msg || item.message;
+    Object.keys(item).filter(v => !externals.includes(v)).forEach(key => {
         let _rule = (ctx.$own[key] || rules[key]);
         if (!_rule) return;
-        let isTrue = isFunction(_rule.base) ? _rule.base(item[key]) : true;
+        let isTrue = isFun(_rule.base) ? _rule.base(item[key]) : true;
         if (!isTrue) {
-            throw Error(`校验规则\'${key}\'的基准值\'${JSON.stringify(item[key])}\'非法！`);
+            throw Error(`校验规则'${key}'的基准值'${JSON.stringify(item[key])}'非法！`);
         }
         let _new = { _rule: key, [key]: item[key] };
         if (_msg) _new.msg = _msg;
@@ -121,7 +121,7 @@ function parseObject(item, target, ctx) {
 function parseOptionItems (item, target, ctx) {
     if (isString(item)) {
         parseString(item, target);
-    } else if (isObject(item)) {
+    } else if (isObj(item)) {
         parseObject(item, target, ctx);
     } else if (isArray(item)) {
         item.forEach(s => isString(s) ? parseString(s, target) : parseObject(s, target, ctx));
@@ -137,7 +137,7 @@ function parseOptionItems (item, target, ctx) {
 function Validator (options) {
     this.$options = {};
     this.$own = {};
-    if (options && isObject(options)) {
+    if (options && isObj(options)) {
         this[initOptions](options);
     }
 }
@@ -149,7 +149,7 @@ function Validator (options) {
  */
 Validator.prototype[initOptions] = function (opts) {
     let _op = this.$options || {};
-    if (!isObject(opts)) return;
+    if (!isObj(opts)) return;
     Object.keys(opts).forEach(key => {
         _op[key] = _op[key] || [];
         let _item = opts[key];
@@ -163,7 +163,7 @@ Validator.prototype[initOptions] = function (opts) {
  * @param {Object} val 待校验对象
  */
 Validator.prototype[innerValidate] = function (val) {
-    if (!isObject(val)) {
+    if (!isObj(val)) {
         throw Error('参数 \'val\' 必须是Object类型数据！');
     }
     let _op = this.$options, _opt, _failMsg;
@@ -175,15 +175,15 @@ Validator.prototype[innerValidate] = function (val) {
             let _rule = this.$own[o._rule] || rules[o._rule];
             if (_failMsg || !_rule.assert) return;
             if (!_rule.assert(val[key], o[o._rule])) {
-                _failMsg = o.msg || `字段\'${key}\'${_rule.name || ''}校验不通过`;
+                _failMsg = o.msg || `字段'${key}'${_rule.name || ''}校验不通过`;
             }
         });
-        if(isObject(val[key])){
+        if(isObj(val[key])){
             let res = this[innerValidate](val[key]);
             (!res.valid) && (_failMsg = res.msg);
         }else if(isArray(val[key])){
             val[key].forEach(v => {
-                if(!isObject(v)) return;
+                if(!isObj(v)) return;
                 let res = this[innerValidate](v);
                 (!res.valid) && (_failMsg = res.msg);
             });
@@ -202,10 +202,10 @@ Validator.prototype[innerValidate] = function (val) {
  */
 Validator.prototype.addRule = function (ruleName, rule) {
     if (!isString(ruleName)) return;
-    if (isObject(rule) && rule.assert) {
+    if (isObj(rule) && rule.assert) {
         return (this.$own[ruleName] = rule);
     }
-    if (!isFunction(rule)) return;
+    if (!isFun(rule)) return;
     this.$own[ruleName] = {
         assert: rule
     }
@@ -216,34 +216,42 @@ Validator.prototype.addRule = function (ruleName, rule) {
  * @param {Object} options 校验选项 
  */
 Validator.prototype.addOptions = function (options) {
-    if (!isObject(options)) return;
+    if (!isObj(options)) return;
     this[initOptions](options);
 }
 
+
+function _error(msg, fn){
+    isFun(fn) && fn(msg);
+    throw Error(_msg);
+}
+
 /**
- * 单项数据校验（多项数据校验也可使用）
- * @param {Any} val 待校验数据 
- * @param {Any} options 数据校验选项
+ * 单项数据校验
+ * @param {Any} val 待校验数据值，只能是简单类型
+ * @param {Any} options 校验选项，当为简单时，做全等判断，其余情况下按校验规则校验
+ * @param {?Function} onInvalid 当校验失败时调用的方法（当options参数为string类型或null时忽略该参数）
  */
-Validator.prototype.assert = function (val, options) {
-    if (isObject(val)) { 
-        return this.validate(val, options);
+Validator.prototype.assert = function (val, options, onInvalid) {
+    let _type = typeof(val), _type2 = typeof(options);
+    if (val !== null && !sTyps.includes(_type)) {
+        _error('\'assert\'方法只支持简单类型数据的判断！', onInvalid);
     }
-    let _type = typeof(val);
-    if (val !== null && !assertTypes.includes(_type)) {
-        throw Error('\'assert\'方法只支持Object类型或者简单类型数据的判断！');
+    if (arguments.length === 1) {
+        _error('\'assert\'校验数据时参数\'options\'不可缺少', onInvalid);
+    }
+    if (options === null | !sTyps.includes(_type2)) return (val === options);
+    if (!isArray(options) && isObj(options)) {
+        _error('参数\'options\'只支持String、Object或Array类型！', onInvalid);
     }
     let _opts = [];
-    if (options === undefined) {
-        throw Error('简单类型判断时参数\'options\'不可缺少')
-    }
     parseOptionItems(options, _opts, this);
-    if (!_opts.length) {
-        return val === options;
-    }
     let res = true, _rule;
-    _opts.forEach(o => {
-        if (!res) return;
+    _opts.forEach((o, i) => {
+        if (!res) {
+            let _msg = _opts[i - 1].msg || `待检验值'${val}'验证失败！`;
+            return (isFun(onInvalid) && onInvalid(_msg));
+        }
         _rule = this.$own[o._rule] || rules[o._rule];
         res = _rule.assert(val, o[o._rule]);
     });
@@ -257,18 +265,18 @@ Validator.prototype.assert = function (val, options) {
  * @param {Object} options 数据校验选项（可选参数，如果传入，则要去必须为Object对象）
  */
 Validator.prototype.validate = function (val, onInvalid, options) {
-    if (isObject(onInvalid)) {
+    if (!isObj(val)) {
+        let msg = '参数类型错误，参数\'val\'必须为Object对象类型！';
+        isFun(onInvalid) && onInvalid(msg);
+        throw Error(msg);
+    }
+    if (isObj(onInvalid)) {
         options = Object.assign({}, onInvalid, options);
     }
     options && this[initOptions](options);
-    if(!isObject(val)){
-        let msg = '参数类型错误，参数\'val\'必须为Object对象类型！';
-        isFunction(onInvalid) && onInvalid(msg);
-        throw Error(msg);
-    }
     let res = this[innerValidate](val);
     if (!res.valid) {
-        isFunction(onInvalid) && onInvalid(res.msg);
+        isFun(onInvalid) && onInvalid(res.msg);
         return false;
     }
     return true;
