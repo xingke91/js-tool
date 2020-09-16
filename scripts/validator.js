@@ -27,7 +27,7 @@ const externals = ['msg', 'message', 'error'];
  * }
  */
 const rules = {
-    nonEmpty: {
+    required: {
         name: '非空',
         assert: (val) => (val === 0 || !!(val && val.toString().trim())),
     },
