@@ -220,12 +220,6 @@ Validator.prototype.addOptions = function (options) {
     this[initOptions](options);
 }
 
-
-function _error(msg, fn){
-    isFun(fn) && fn(msg);
-    throw Error(_msg);
-}
-
 /**
  * 单项数据校验
  * @param {Any} val 待校验数据值，只能是简单类型
@@ -233,16 +227,20 @@ function _error(msg, fn){
  * @param {?Function} onInvalid 当校验失败时调用的方法（当options参数为string类型或null时忽略该参数）
  */
 Validator.prototype.assert = function (val, options, onInvalid) {
+    let _error = (msg => {
+        isFun(onInvalid) && onInvalid(msg);
+        throw Error(msg);
+    });
     let _type = typeof(val), _type2 = typeof(options);
     if (val !== null && !sTyps.includes(_type)) {
-        _error('\'assert\'方法只支持简单类型数据的判断！', onInvalid);
+        _error('\'assert\'方法只支持简单类型数据的判断！');
     }
     if (arguments.length === 1) {
-        _error('\'assert\'校验数据时参数\'options\'不可缺少', onInvalid);
+        _error('\'assert\'校验数据时参数\'options\'不可缺少');
     }
     if (options === null | !sTyps.includes(_type2)) return (val === options);
     if (!isArray(options) && isObj(options)) {
-        _error('参数\'options\'只支持String、Object或Array类型！', onInvalid);
+        _error('参数\'options\'只支持简单类型、Object或Array类型！');
     }
     let _opts = [];
     parseOptionItems(options, _opts, this);
