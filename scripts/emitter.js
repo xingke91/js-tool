@@ -14,7 +14,7 @@ const emitter = (function(){
         one (evtName, call) {
             if(!evtName || typeof(call) !== 'function') return;
             this.on(evtName, function(){
-                let args = Array.prototype.slice.call(arguments, 1);
+                let args = Array.prototype.slice.call(arguments);
                 call(...args);
                 this.off(evtName);
             });
