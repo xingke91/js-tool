@@ -11,11 +11,11 @@ const emitter = (function(){
             events[evtName] = call;
         },
         //绑定单次事件
-        one (evtName, call) {
+        one (evtName, callback) {
             if(!evtName || typeof(call) !== 'function') return;
             this.on(evtName, function(){
                 let args = Array.prototype.slice.call(arguments);
-                call(...args);
+                callback(...args);
                 this.off(evtName);
             });
         },
@@ -28,7 +28,7 @@ const emitter = (function(){
         emit (evtName) {
             if(!events[evtName]) return;
             let args = Array.prototype.slice.call(arguments, 1);
-            events[evtName](...args);
+            events[evtName].apply(null, args);
         }
     };
 })();
