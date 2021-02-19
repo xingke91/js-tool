@@ -268,7 +268,31 @@ function deepClone(obj){
     return result;
 }
 
-
+/**
+ * @description 保存数据为excel文件
+ * @param {String} content excel表格文件序列化的数据
+ * @param {String} fileName 保存的文件名，如：xxx.xslx
+*/
+function saveExcel(content, fileName) {
+  const blob = new Blob([content], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;chartset=utf-8'
+  })
+  const elink = document.createElement('a')
+  if ('download' in elink) {
+    // 非IE下载
+    elink.style.display = 'none'
+    elink.href = URL.createObjectURL(blob)
+    elink.target = '_self'
+    elink.download = fileName
+    document.body.appendChild(elink)
+    elink.click()
+    URL.revokeObjectURL(elink.href)
+    document.body.removeChild(elink)
+  } else {
+    // IE10+下载
+    navigator.msSaveBlob(blob)
+  }
+}
 
 export {
     isEmail,
@@ -293,5 +317,6 @@ export {
     getHash,
     sameType,
     filterToJSON,
-    deepClone
+    deepClone,
+    saveExcel
 }
